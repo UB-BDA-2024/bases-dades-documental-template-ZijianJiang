@@ -47,3 +47,21 @@ def delete_sensor(db: Session, sensor_id: int, mongodb_client: MongoDBClient, re
     mongodb_client.deleteOne(db_sensor.name)
     redis_client.delete(sensor_id)
     return db_sensor
+
+def get_sensors_near(latitude: float, longitude: float, radius: float, db: Session, mongodb_client: MongoDBClient, redis_client = RedisClient):
+    lat_min, lat_max = latitude - radius, latitude + radius
+    long_min, long_max = longitude - radius, longitude + radius
+    query = {
+        "latitude": {"$gte": lat_min, "$lte": lat_max},
+        "longitude": {"$gte": long_min, "$lte": long_max}
+    }
+    sensors = mongodb_client.collection.find(query)
+    
+    sensors_nearby = []
+    for sensor in sensors:
+        db_sensor = get_sensor_by_name(db, sensor['name'])
+        if db_sensor:
+            sensor_data = get_data(redis_client, db_sensor.id)
+            sensors_nearby.append(sensor_data)
+
+    return sensors_nearby
