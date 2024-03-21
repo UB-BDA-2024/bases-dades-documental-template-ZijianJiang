@@ -37,10 +37,13 @@ def get_data(redis: Session, sensor_id: int) -> schemas.Sensor:
         raise HTTPException(status_code=404, detail="Sensor data not found")
     return schemas.SensorData(**json.loads(db_data))
 
-def delete_sensor(db: Session, sensor_id: int):
+def delete_sensor(db: Session, sensor_id: int, mongodb_client: MongoDBClient, redis_client = RedisClient):
     db_sensor = db.query(models.Sensor).filter(models.Sensor.id == sensor_id).first()
     if db_sensor is None:
         raise HTTPException(status_code=404, detail="Sensor not found")
     db.delete(db_sensor)
     db.commit()
+    
+    mongodb_client.deleteOne(db_sensor.name)
+    redis_client.delete(sensor_id)
     return db_sensor
