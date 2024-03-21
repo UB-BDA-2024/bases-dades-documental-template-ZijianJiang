@@ -31,9 +31,11 @@ def record_data(redis: Session, sensor_id: int, data: schemas.SensorData) -> sch
     redis.set(sensor_id, json.dumps(data.dict()))
     return sensor_data
 
-def get_data(redis: Session, sensor_id: int, data: schemas.SensorData) -> schemas.Sensor:
-    db_sensordata = data
-    return db_sensordata
+def get_data(redis: Session, sensor_id: int) -> schemas.Sensor:
+    db_data = redis.get(sensor_id)
+    if db_data is None:
+        raise HTTPException(status_code=404, detail="Sensor data not found")
+    return schemas.SensorData(**json.loads(db_data))
 
 def delete_sensor(db: Session, sensor_id: int):
     db_sensor = db.query(models.Sensor).filter(models.Sensor.id == sensor_id).first()

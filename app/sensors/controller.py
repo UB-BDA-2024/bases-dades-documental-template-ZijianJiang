@@ -85,6 +85,11 @@ def record_data(sensor_id: int, data: schemas.SensorData,db: Session = Depends(g
 
 # 🙋🏽‍♀️ Add here the route to get data from a sensor
 @router.get("/{sensor_id}/data")
-def get_data(sensor_id: int, data: schemas.SensorData, db: Session = Depends(get_db) ,redis_client: RedisClient = Depends(get_redis_client)):    
-    raise HTTPException(status_code=404, detail="Not implemented")
-    #return repository.get_data(redis=redis_client, sensor_id=sensor_id, data=data)
+def get_data(sensor_id: int, db: Session = Depends(get_db) ,redis_client: RedisClient = Depends(get_redis_client)):
+    db_sensor = repository.get_sensor(db, sensor_id)
+    if db_sensor is None:
+        raise HTTPException(status_code=404, detail="Sensor not found")
+    data_dict = repository.get_data(redis_client, sensor_id).dict()
+    data_dict["id"] = db_sensor.id
+    data_dict["name"] = db_sensor.name
+    return data_dict
